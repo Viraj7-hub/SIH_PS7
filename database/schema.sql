@@ -104,40 +104,64 @@ CREATE TABLE IF NOT EXISTS voyages (
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------------
--- 5. ROUTE REQUESTS  (one per voyage, updated as Member 2 fills it in)
+-- 5. ROUTE REQUESTS  (Member 2: voyage_id is nullable to allow standalone
+--    Nautilus route requests that don't require a voyage record)
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS route_requests (
-  id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  voyage_id     INT UNSIGNED  NOT NULL,
-  priority_fuel TINYINT(1)    NOT NULL DEFAULT 1,
-  priority_time TINYINT(1)    NOT NULL DEFAULT 0,
-  priority_safety TINYINT(1)  NOT NULL DEFAULT 1,
-  vessel_type   VARCHAR(80)   NULL,
-  max_speed     DECIMAL(6,2)  NULL,
-  draft         DECIMAL(5,2)  NULL,
-  status        ENUM('PENDING','PROCESSING','COMPLETE','FAILED') NOT NULL DEFAULT 'PENDING',
-  created_at    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  voyage_id       INT UNSIGNED  NULL,                       -- NULL = standalone Nautilus request
+  source_port_id  VARCHAR(20)   NULL,
+  dest_port_id    VARCHAR(20)   NULL,
+  priority_fuel   TINYINT(1)    NOT NULL DEFAULT 1,
+  priority_time   TINYINT(1)    NOT NULL DEFAULT 0,
+  priority_safety TINYINT(1)   NOT NULL DEFAULT 1,
+  vessel_type     VARCHAR(80)   NULL,
+  max_speed       DECIMAL(6,2)  NULL,
+  draft           DECIMAL(5,2)  NULL,
+  -- Computed priority weights (Member 2 fills these in)
+  weight_fuel     DECIMAL(4,3)  NULL,
+  weight_time     DECIMAL(4,3)  NULL,
+  weight_safety   DECIMAL(4,3)  NULL,
+  status          ENUM('PENDING','PROCESSING','COMPLETE','FAILED') NOT NULL DEFAULT 'PENDING',
+  created_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
-  UNIQUE KEY uq_rr_voyage (voyage_id),
+  INDEX idx_rr_voyage (voyage_id),
+  INDEX idx_rr_ports  (source_port_id, dest_port_id),
   CONSTRAINT fk_rr_voyage FOREIGN KEY (voyage_id) REFERENCES voyages (id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------------
 -- 6. ROUTE RESULTS  (filled by Member 2's optimization engine)
+--    Stores both the standard (distance-minimized) route and the
+--    multi-objective optimized route for comparison in the Nautilus UI.
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS route_results (
-  id                  INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  route_request_id    INT UNSIGNED  NOT NULL,
-  algorithm           VARCHAR(80)   NOT NULL DEFAULT 'Multi-Objective Dijkstra',
-  waypoints_json      LONGTEXT      NOT NULL,  -- JSON array [{lat,lon}]
-  distance_km         DECIMAL(10,3) NULL,
-  estimated_time_hrs  DECIMAL(8,2)  NULL,
-  fuel_estimate_tons  DECIMAL(10,4) NULL,
-  safety_score        TINYINT UNSIGNED NULL,    -- 0-100
-  created_at          DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  id                        INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  route_request_id          INT UNSIGNED  NOT NULL,
+  algorithm                 VARCHAR(80)   NOT NULL DEFAULT 'Multi-Objective A*',
 
-  UNIQUE KEY uq_rr_result (route_request_id),
+  -- Standard route (distance-minimized Dijkstra)
+  waypoints_json            LONGTEXT      NOT NULL,   -- JSON [[lat,lng], ...]
+  distance_nm               DECIMAL(10,3) NULL,       -- nautical miles
+  distance_km               DECIMAL(10,3) NULL,       -- kilometres
+  estimated_time_hrs        DECIMAL(8,2)  NULL,
+  fuel_estimate_tons        DECIMAL(10,4) NULL,
+  safety_score              TINYINT UNSIGNED NULL,    -- 0-100
+
+  -- Optimized route (multi-objective A*)
+  optimized_waypoints_json  LONGTEXT      NULL,       -- JSON [[lat,lng], ...]
+  optimized_distance_nm     DECIMAL(10,3) NULL,
+  optimized_time_hrs        DECIMAL(8,2)  NULL,
+  optimized_fuel_tons       DECIMAL(10,4) NULL,
+  optimized_safety_score    TINYINT UNSIGNED NULL,
+
+  -- Explanation (Member 2 generates from real optimization results)
+  explanation_json          LONGTEXT      NULL,
+
+  created_at                DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  INDEX idx_rr_result (route_request_id),
   CONSTRAINT fk_result_request FOREIGN KEY (route_request_id) REFERENCES route_requests (id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 

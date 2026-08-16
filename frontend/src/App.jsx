@@ -1,7 +1,8 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
-import Login from './pages/Login';
-import ShipSelect from './pages/ShipSelect';
-import Dashboard from './pages/Dashboard';
+import Login          from './pages/Login';
+import ShipSelect     from './pages/ShipSelect';
+import Dashboard      from './pages/Dashboard';
+import NautilusRouter from './pages/NautilusRouter';
 
 function ProtectedShipRoute({ children }) {
   const token = localStorage.getItem('oceanroute_token');
@@ -41,12 +42,15 @@ function GuestRoute({ children }) {
 function App() {
   return (
     <Routes>
-      <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
+      <Route path="/login"      element={<GuestRoute><Login /></GuestRoute>} />
       <Route path="/ship-select" element={<ProtectedShipRoute><ShipSelect /></ProtectedShipRoute>} />
-      <Route path="/dashboard" element={<ProtectedDashboardRoute><Dashboard /></ProtectedDashboardRoute>} />
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route path="/dashboard"  element={<ProtectedDashboardRoute><Dashboard /></ProtectedDashboardRoute>} />
+      {/* Nautilus Route Optimizer — requires auth but no ship selection */}
+      <Route path="/nautilus"   element={<ProtectedShipRoute><NautilusRouter /></ProtectedShipRoute>} />
+      <Route path="*"           element={<Navigate to="/login" replace />} />
     </Routes>
   );
 }
 
 export default App;
+

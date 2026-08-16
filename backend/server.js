@@ -33,6 +33,7 @@ const authRoutes    = require('./routes/auth.routes');
 const shipRoutes    = require('./routes/ship.routes');
 const portRoutes    = require('./routes/port.routes');
 const voyageRoutes  = require('./routes/voyage.routes');
+const routeRoutes   = require('./routes/route.routes');   // Member 2 — Route Engine
 const legacyRoutes  = require('./routes/legacy.routes');
 const { healthCheck } = require('./controllers/health.controller');
 
@@ -63,6 +64,7 @@ app.use('/api/auth',     authRoutes);
 app.use('/api/ships',    shipRoutes);
 app.use('/api/ports',    portRoutes);
 app.use('/api/voyages',  voyageRoutes);
+app.use('/api/routes',   routeRoutes);   // Nautilus Route Engine (Member 2)
 app.use('/api',          legacyRoutes);  // legacy compat — last
 
 // ── Error Handlers ───────────────────────────────────────────────────────────

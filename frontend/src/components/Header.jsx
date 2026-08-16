@@ -1,6 +1,9 @@
-import { Bell, LogOut, ShipWheel, UserRound } from 'lucide-react';
+import { Bell, LogOut, ShipWheel, UserRound, Compass } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export default function Header({ shipName, shipId, onLogout }) {
+  const navigate = useNavigate();
+
   return (
     <header className="flex items-center justify-between rounded-[26px] border border-slate-700/70 bg-slate-950/80 px-4 py-3 shadow-[0_20px_60px_rgba(2,6,23,0.45)] backdrop-blur-sm">
       <div className="flex items-center gap-3">
@@ -18,6 +21,19 @@ export default function Header({ shipName, shipId, onLogout }) {
       </div>
 
       <div className="flex items-center gap-3">
+        {/* Nautilus Router shortcut */}
+        <button
+          type="button"
+          onClick={() => navigate('/nautilus')}
+          title="Open Nautilus Route Optimizer"
+          className="hidden sm:inline-flex items-center gap-1.5 rounded-2xl border border-cyan-500/40
+                     bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-300
+                     transition hover:bg-cyan-500/20 hover:border-cyan-400"
+        >
+          <Compass className="h-3.5 w-3.5" />
+          Nautilus
+        </button>
+
         <div className="hidden rounded-2xl border border-slate-700/80 bg-slate-900/80 px-3 py-2 text-right shadow-sm sm:block">
           <div className="text-[0.62rem] uppercase tracking-[0.22em] text-slate-400">Ship</div>
           <div className="text-sm font-medium text-white">{shipName}</div>
@@ -38,3 +54,4 @@ export default function Header({ shipName, shipId, onLogout }) {
     </header>
   );
 }
+

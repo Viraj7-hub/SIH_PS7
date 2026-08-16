@@ -27,14 +27,34 @@ api.interceptors.response.use(
   }
 );
 
-export const login = async (payload) => api.post('/auth/login', payload);
-export const getShip = async (shipId) => api.get(`/ships/${shipId}`);
-export const getShipPosition = async (shipId) => api.get(`/ships/${shipId}/position`);
-export const optimizeRoute = async (shipId) => api.post('/route/optimize', { shipId });
-export const getWeather = async (shipId) => api.get(`/weather/${shipId}`);
-export const getOceanConditions = async (shipId) => api.get(`/ocean/${shipId}`);
-export const getCyclones = async (shipId) => api.get(`/cyclones/${shipId}`);
-export const sendChatMessage = async (shipId, message) =>
+// ── Existing endpoints ────────────────────────────────────────────────────────
+export const login             = async (payload)       => api.post('/auth/login', payload);
+export const getShip           = async (shipId)        => api.get(`/ships/${shipId}`);
+export const getShipPosition   = async (shipId)        => api.get(`/ships/${shipId}/position`);
+export const optimizeRoute     = async (shipId)        => api.post('/route/optimize', { shipId });
+export const getWeather        = async (shipId)        => api.get(`/weather/${shipId}`);
+export const getOceanConditions = async (shipId)       => api.get(`/ocean/${shipId}`);
+export const getCyclones       = async (shipId)        => api.get(`/cyclones/${shipId}`);
+export const sendChatMessage   = async (shipId, message) =>
   api.post('/chat', { shipId, message });
 
+// ── Ports ─────────────────────────────────────────────────────────────────────
+/** Fetch all ports from MySQL for the Nautilus port dropdowns. */
+export const getPorts = async () => api.get('/ports');
+
+// ── Nautilus Route Engine  (POST /api/routes/optimize) ────────────────────────
+/**
+ * Run full multi-objective route optimization.
+ * @param {{ sourcePortId, destinationPortId, vessel, priorities }} payload
+ */
+export const optimizeNautilusRoute = async (payload) =>
+  api.post('/routes/optimize', payload);
+
+/**
+ * Retrieve a previously saved Nautilus route result by ID.
+ * @param {number} id
+ */
+export const getNautilusRoute = async (id) => api.get(`/routes/${id}`);
+
 export default api;
+
