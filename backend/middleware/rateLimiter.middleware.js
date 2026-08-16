@@ -40,4 +40,45 @@ const apiLimiter = rateLimit({
   },
 });
 
-module.exports = { authLimiter, apiLimiter };
+/**
+ * Marine weather limiter — applied to GET /api/marine-weather.
+ * 6 requests per minute per IP.
+ *
+ * Rationale: Each request may trigger 500+ Open-Meteo API calls if the
+ * cache is cold. A bug in the frontend (e.g. missing cache) could hammer
+ * Open-Meteo without this limit. 6 req/min = 1 every 10 seconds, which is
+ * far more than a real user needs.
+ */
+const marineWeatherLimiter = rateLimit({
+  windowMs:        60 * 1000, // 1 minute
+  max:             6,
+  standardHeaders: true,
+  legacyHeaders:   false,
+  message: {
+    success: false,
+    message: 'Marine weather data is rate limited. Please wait before refreshing.',
+    code:    'RATE_LIMITED',
+  },
+});
+
+/**
+ * Chat limiter — applied to POST /api/chat.
+ * 30 requests per minute per IP.
+ *
+ * Rationale: Each chat request triggers multiple DB queries (voyage context).
+ * A chatbot integration test or frontend bug should not be able to saturate
+ * the database with context-building queries.
+ */
+const chatLimiter = rateLimit({
+  windowMs:        60 * 1000, // 1 minute
+  max:             30,
+  standardHeaders: true,
+  legacyHeaders:   false,
+  message: {
+    success: false,
+    message: 'Too many chat requests. Please wait a moment.',
+    code:    'RATE_LIMITED',
+  },
+});
+
+module.exports = { authLimiter, apiLimiter, marineWeatherLimiter, chatLimiter };

@@ -231,17 +231,19 @@ CREATE TABLE IF NOT EXISTS ocean_conditions (
 -- 10. CYCLONES  (Member 3 — active storm tracking)
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS cyclones (
-  id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  name        VARCHAR(80)   NOT NULL,
-  latitude    DECIMAL(9,6)  NOT NULL,
-  longitude   DECIMAL(9,6)  NOT NULL,
-  radius_km   DECIMAL(7,2)  NOT NULL DEFAULT 150.00,
-  risk_score  TINYINT UNSIGNED NOT NULL DEFAULT 0,  -- 0-100
-  category    TINYINT UNSIGNED NULL,                 -- Saffir-Simpson 1-5
-  wind_speed  DECIMAL(6,2)  NULL,                   -- knots
-  is_active   TINYINT(1)    NOT NULL DEFAULT 1,
-  detected_at DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  id           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name         VARCHAR(80)   NOT NULL,
+  latitude     DECIMAL(9,6)  NOT NULL,
+  longitude    DECIMAL(9,6)  NOT NULL,
+  radius_km    DECIMAL(7,2)  NOT NULL DEFAULT 150.00,
+  risk_score   TINYINT UNSIGNED NOT NULL DEFAULT 0,  -- 0-100
+  category     TINYINT UNSIGNED NULL,                 -- Saffir-Simpson 1-5
+  wind_speed   DECIMAL(6,2)  NULL,                   -- knots
+  pressure_hpa DECIMAL(7,2)  NULL                    COMMENT 'Central pressure in hPa (lower = more intense)',
+  expires_at   DATETIME      NULL                    COMMENT 'When this cyclone record should be auto-deactivated',
+  is_active    TINYINT(1)    NOT NULL DEFAULT 1,
+  detected_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
   INDEX idx_cyclones_active (is_active),
   INDEX idx_cyclones_location (latitude, longitude)

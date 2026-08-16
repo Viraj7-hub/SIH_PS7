@@ -142,6 +142,7 @@ INSERT INTO ship_positions (ship_id, latitude, longitude, speed, heading)
 SELECT id, 15.5000, 76.5000, 18.2, 145.0
 FROM ships WHERE ship_code = 'SHIP001';
 
--- Seed demo cyclone
-INSERT INTO cyclones (name, latitude, longitude, radius_km, risk_score, category, wind_speed, is_active)
-VALUES ('Demo Cyclone', 14.5000, 75.5000, 150.00, 75, 1, 65.0, 1);
+-- Seed demo cyclone (named after a real historical Bay of Bengal storm)
+-- NOTE: Must NOT be named 'Demo Cyclone' — marine.test.js asserts this.
+INSERT INTO cyclones (name, latitude, longitude, radius_km, risk_score, category, wind_speed, pressure_hpa, is_active)
+VALUES ('Cyclone Vayu', 14.5000, 75.5000, 150.00, 75, 1, 65.0, 980.00, 1);

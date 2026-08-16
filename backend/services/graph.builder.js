@@ -35,6 +35,34 @@
  */
 
 const portModel = require('../models/port.model');
+const isSea = require('is-sea');
+const fs = require('fs');
+const path = require('path');
+
+const CACHE_FILE_PATH = path.join(__dirname, 'land_edges_cache.json');
+let _landCache = null;
+
+function loadLandCache() {
+  if (_landCache) return _landCache;
+  try {
+    if (fs.existsSync(CACHE_FILE_PATH)) {
+      _landCache = JSON.parse(fs.readFileSync(CACHE_FILE_PATH, 'utf8'));
+    } else {
+      _landCache = {};
+    }
+  } catch {
+    _landCache = {};
+  }
+  return _landCache;
+}
+
+function saveLandCache() {
+  try {
+    fs.writeFileSync(CACHE_FILE_PATH, JSON.stringify(_landCache, null, 2), 'utf8');
+  } catch {
+    // Ignore cache save errors gracefully
+  }
+}
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -177,11 +205,8 @@ async function loadNodes() {
  * nodes:     Map<nodeId, NodeObject>
  */
 async function buildGraph(vessel = {}) {
-  // Use cache if fresh (same vessel params don't matter for topology,
-  // only for edge weights — we rebuild weights per vessel)
-  const now = Date.now();
-  if (_graphCache && _cacheBuildTime && (now - _cacheBuildTime) < CACHE_TTL_MS) {
-    // Recompute edge weights for this vessel without rebuilding topology
+  // Use cache if available (topology is static; we only recompute weights for this vessel)
+  if (_graphCache) {
     return applyVesselWeights(_graphCache, vessel);
   }
 
@@ -210,6 +235,38 @@ async function buildGraph(vessel = {}) {
 
       if (dist > MAX_HOP_NM) continue;
 
+      // Check land-crossing using persistent cache + is-sea fallback
+      const cacheKey = `${a.id}_${b.id}`;
+      const revCacheKey = `${b.id}_${a.id}`;
+      const cache = loadLandCache();
+      
+      let crossesLand = false;
+      if (cache[cacheKey] !== undefined) {
+        crossesLand = cache[cacheKey];
+      } else if (cache[revCacheKey] !== undefined) {
+        crossesLand = cache[revCacheKey];
+      } else {
+        // Calculate on-the-fly and save to cache
+        let steps = 10;
+        if (dist < 100) steps = 2;
+        else if (dist < 500) steps = 5;
+        else if (dist < 1000) steps = 8;
+
+        for (let k = 1; k < steps; k++) {
+          const t = k / steps;
+          const lat = a.lat + t * (b.lat - a.lat);
+          const lng = a.lng + t * (b.lng - a.lng);
+          if (!isSea(lat, lng)) {
+            crossesLand = true;
+            break;
+          }
+        }
+        cache[cacheKey] = crossesLand;
+        saveLandCache();
+      }
+
+      if (crossesLand) continue;
+
       // Average the two nodes' risk and draft limits for the edge
       const edgeMaxDraft = Math.min(a.maxDraft, b.maxDraft);
       const edgeBaseRisk = (a.baseRisk + b.baseRisk) / 2;
@@ -219,7 +276,7 @@ async function buildGraph(vessel = {}) {
   }
 
   _graphCache = { nodes, adjacency, allEdges };
-  _cacheBuildTime = now;
+  _cacheBuildTime = Date.now();
 
   return applyVesselWeights(_graphCache, vessel);
 }

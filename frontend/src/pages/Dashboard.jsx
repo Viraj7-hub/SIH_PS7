@@ -6,6 +6,7 @@ import MapView from '../components/MapView';
 import VoyageCard from '../components/VoyageCard';
 import VoyageStatus from '../components/VoyageStatus';
 import RouteExplanation from '../components/RouteExplanation';
+import Chatbot from '../components/Chatbot';
 import { getCyclones, getOceanConditions, getShipPosition, getWeather, optimizeRoute } from '../services/api';
 import MapLayerToggle from '../components/MapLayerToggle';
 
@@ -96,7 +97,7 @@ export default function Dashboard() {
     const intervalId = setInterval(async () => {
       try {
         const response = await getShipPosition(ship.shipId);
-        setLivePosition(response.data);
+        setLivePosition(response.data.data);
       } catch {
         // Ignore polling failures silently to keep the map responsive.
       }
@@ -104,6 +105,7 @@ export default function Dashboard() {
 
     return () => clearInterval(intervalId);
   }, [ship?.shipId]);
+
 
   const toggleLayer = (key) => {
     setMapLayers((current) => ({ ...current, [key]: !current[key] }));
@@ -126,6 +128,7 @@ export default function Dashboard() {
   const handleLogout = () => {
     localStorage.removeItem('oceanroute_token');
     localStorage.removeItem('oceanroute_ship');
+    localStorage.removeItem('oceanroute_role');
     navigate('/login');
   };
 
@@ -201,6 +204,7 @@ export default function Dashboard() {
             </div>
 
             <RouteExplanation />
+            <Chatbot shipId={ship.shipId} />
           </aside>
         </div>
 

@@ -27,7 +27,7 @@ export default function ShipSelect() {
     try {
       setLoading(true);
       const response = await getShip(shipId.trim().toUpperCase());
-      localStorage.setItem('oceanroute_ship', JSON.stringify(response.data));
+      localStorage.setItem('oceanroute_ship', JSON.stringify(response.data.data));
       navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Ship ID not found. Please check your Ship ID.');

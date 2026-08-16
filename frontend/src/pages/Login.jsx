@@ -15,6 +15,17 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  /**
+   * Extract token + role from both API response shapes:
+   *   New:    { success: true, token, user: { role } }
+   *   Legacy: { token, user: { email, name } }
+   */
+  const extractAuth = (payload) => {
+    const token    = payload?.token || payload?.data?.token;
+    const userRole = payload?.user?.role || payload?.data?.user?.role || 'crew';
+    return { token, userRole };
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
@@ -28,19 +39,15 @@ export default function Login() {
     try {
       setLoading(true);
       const response = await login({ email: form.email, password: form.password });
-<<<<<<< Updated upstream
-      localStorage.setItem('oceanroute_token', response.data.token);
-      navigate('/ship-select');
-=======
-      // New API: { success: true, data: { token, user: { role } } }
-      // Legacy:  { token, user: { email, name } }
-      const payload = response.data;
-      const token = payload.data?.token || payload.token;
-      const userRole = payload.data?.user?.role || role;
+      const { token, userRole } = extractAuth(response.data);
+      if (!token) throw new Error('No token received');
       localStorage.setItem('oceanroute_token', token);
       localStorage.setItem('oceanroute_role', userRole);
-      navigate('/nautilus');
->>>>>>> Stashed changes
+      if (userRole === 'captain') {
+        navigate('/nautilus');
+      } else {
+        navigate('/ship-select');
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid email or password.');
     } finally {
@@ -48,29 +55,21 @@ export default function Login() {
     }
   };
 
-<<<<<<< Updated upstream
-  const handleDemoLogin = () => {
-    localStorage.setItem('oceanroute_token', 'demo-token');
-    navigate('/ship-select');
-=======
   const handleDemoLogin = async () => {
     setError('');
     try {
       setLoading(true);
-      const response = await login({ email: 'demo@oceanroute.com', password: 'demo123' });
-      const { token, data } = response.data;
-      // Support both new { success, data: { token } } and legacy { token } shape
-      const actualToken = token || data?.token;
-      const actualRole  = data?.user?.role || role;
-      localStorage.setItem('oceanroute_token', actualToken);
-      localStorage.setItem('oceanroute_role', actualRole);
-      navigate('/nautilus');
+      const response = await login({ email: 'crew@oceanroute.com', password: 'demo123' });
+      const { token, userRole } = extractAuth(response.data);
+      if (!token) throw new Error('No token received');
+      localStorage.setItem('oceanroute_token', token);
+      localStorage.setItem('oceanroute_role', userRole);
+      navigate('/ship-select');
     } catch (err) {
       setError(err.response?.data?.message || 'Demo login failed. Please try again.');
     } finally {
       setLoading(false);
     }
->>>>>>> Stashed changes
   };
 
   return (
@@ -131,12 +130,19 @@ export default function Login() {
           <button
             type="button"
             onClick={handleDemoLogin}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm font-medium text-slate-200 transition hover:border-cyan-400 hover:text-white"
+            disabled={loading}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm font-medium text-slate-200 transition hover:border-cyan-400 hover:text-white disabled:opacity-70"
           >
             <ShipWheel className="h-4 w-4" />
             Continue as Demo Passenger
           </button>
         </form>
+
+        <div className="mt-6 border-t border-slate-800/80 pt-4 text-center text-xs text-slate-400 space-y-1">
+          <div><span className="font-semibold text-cyan-400">Captain Logins:</span> demo@oceanroute.com</div>
+          <div><span className="font-semibold text-slate-300">Crew/Passenger:</span> crew@oceanroute.com</div>
+          <div>Password: <span className="font-medium text-slate-200">demo123</span></div>
+        </div>
       </div>
     </div>
   );

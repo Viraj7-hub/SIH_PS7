@@ -29,6 +29,21 @@ function ProtectedDashboardRoute({ children }) {
   return children;
 }
 
+function ProtectedCaptainRoute({ children }) {
+  const token = localStorage.getItem('oceanroute_token');
+  const role = localStorage.getItem('oceanroute_role');
+
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (role !== 'captain') {
+    return <Navigate to="/ship-select" replace />;
+  }
+
+  return children;
+}
+
 function GuestRoute({ children }) {
   const token = localStorage.getItem('oceanroute_token');
 
@@ -45,8 +60,8 @@ function App() {
       <Route path="/login"      element={<GuestRoute><Login /></GuestRoute>} />
       <Route path="/ship-select" element={<ProtectedShipRoute><ShipSelect /></ProtectedShipRoute>} />
       <Route path="/dashboard"  element={<ProtectedDashboardRoute><Dashboard /></ProtectedDashboardRoute>} />
-      {/* Nautilus Route Optimizer — requires auth but no ship selection */}
-      <Route path="/nautilus"   element={<ProtectedShipRoute><NautilusRouter /></ProtectedShipRoute>} />
+      {/* Nautilus Route Optimizer — requires Captain role */}
+      <Route path="/nautilus"   element={<ProtectedCaptainRoute><NautilusRouter /></ProtectedCaptainRoute>} />
       <Route path="*"           element={<Navigate to="/login" replace />} />
     </Routes>
   );
