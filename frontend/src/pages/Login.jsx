@@ -28,8 +28,19 @@ export default function Login() {
     try {
       setLoading(true);
       const response = await login({ email: form.email, password: form.password });
+<<<<<<< Updated upstream
       localStorage.setItem('oceanroute_token', response.data.token);
       navigate('/ship-select');
+=======
+      // New API: { success: true, data: { token, user: { role } } }
+      // Legacy:  { token, user: { email, name } }
+      const payload = response.data;
+      const token = payload.data?.token || payload.token;
+      const userRole = payload.data?.user?.role || role;
+      localStorage.setItem('oceanroute_token', token);
+      localStorage.setItem('oceanroute_role', userRole);
+      navigate('/nautilus');
+>>>>>>> Stashed changes
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid email or password.');
     } finally {
@@ -37,9 +48,29 @@ export default function Login() {
     }
   };
 
+<<<<<<< Updated upstream
   const handleDemoLogin = () => {
     localStorage.setItem('oceanroute_token', 'demo-token');
     navigate('/ship-select');
+=======
+  const handleDemoLogin = async () => {
+    setError('');
+    try {
+      setLoading(true);
+      const response = await login({ email: 'demo@oceanroute.com', password: 'demo123' });
+      const { token, data } = response.data;
+      // Support both new { success, data: { token } } and legacy { token } shape
+      const actualToken = token || data?.token;
+      const actualRole  = data?.user?.role || role;
+      localStorage.setItem('oceanroute_token', actualToken);
+      localStorage.setItem('oceanroute_role', actualRole);
+      navigate('/nautilus');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Demo login failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+>>>>>>> Stashed changes
   };
 
   return (
