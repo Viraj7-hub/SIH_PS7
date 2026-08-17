@@ -214,27 +214,53 @@ async function deactivateExpiredCyclones(maxAgeDays = 3) {
 }
 
 /**
- * FUTURE INTEGRATION POINT
- * ─────────────────────────
- * Replace this stub with a real live-data API call when one becomes available.
- * Candidates: GDACS, JTWC, IBTrACS, NOAA, IMD RSS feeds.
- *
- * The function should:
- *   1. Fetch current storm positions from the external source
- *   2. Call upsertCyclone() for each active storm
- *   3. Call deactivateExpiredCyclones() to clean up resolved storms
+ * Synchronize real-time tropical cyclones from GDACS (Global Disaster Alert & Coordination System).
+ * Automatically updates active cyclone records in MySQL.
  *
  * @returns {Promise<void>}
  */
 async function syncFromLiveSource() {
-  // TODO: Integrate live cyclone data source here.
-  // Example stub for IMD RSS or GDACS JSON API:
-  //
-  // const response = await fetch('https://gdacs.org/gdacsapi/api/events/geteventlist/GDACS');
-  // const events = await response.json();
-  // for (const event of events.features) { ... upsertCyclone(...) }
-  //
-  logger.warn('syncFromLiveSource: no live cyclone API configured — using DB data only');
+  try {
+    const signal = AbortSignal.timeout(10000);
+    const res = await fetch('https://www.gdacs.org/gdacsapi/api/events/geteventlist/GDACS?eventtypes=TC', { signal });
+    if (!res.ok) {
+      logger.warn('GDACS cyclone API returned non-OK status', { status: res.status });
+      return;
+    }
+    const data = await res.json();
+    const features = data?.features || [];
+
+    for (const feat of features) {
+      const props = feat.properties || {};
+      const coords = feat.geometry?.coordinates;
+      if (!coords || coords.length < 2) continue;
+
+      const lon = parseFloat(coords[0]);
+      const lat = parseFloat(coords[1]);
+      const name = props.eventname || props.name || 'Tropical Cyclone';
+      const windSpeed = props.windspeed ? parseFloat(props.windspeed) : null;
+      const pressureHpa = props.severitydata?.severity ? parseFloat(props.severitydata.severity) : null;
+      const alertLevel = props.alertlevel || 'Green';
+      const riskScore = alertLevel === 'Red' ? 85 : alertLevel === 'Orange' ? 65 : 45;
+
+      await upsertCyclone({
+        name,
+        latitude: lat,
+        longitude: lon,
+        radiusKm: 180,
+        windSpeed,
+        pressureHpa,
+        category: props.eventlevel || 1,
+        riskScore,
+        isActive: true,
+      });
+    }
+
+    await deactivateExpiredCyclones(3);
+    logger.info('Live GDACS cyclone sync completed', { count: features.length });
+  } catch (err) {
+    logger.warn('Live cyclone API sync unavailable, using database records', { error: err.message });
+  }
 }
 
 module.exports = {

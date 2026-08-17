@@ -46,6 +46,8 @@ async function findAll() {
  * @returns {Promise<Object|null>}
  */
 async function findByShipCode(shipCode) {
+  if (!shipCode) return null;
+  const cleanCode = String(shipCode).replace(/[^A-Z0-9]/gi, '').toUpperCase();
   const [rows] = await pool.execute(`
     SELECT
       s.id,
@@ -73,9 +75,9 @@ async function findByShipCode(shipCode) {
     FROM ships s
     LEFT JOIN ports sp ON s.source_port_id = sp.id
     LEFT JOIN ports dp ON s.dest_port_id   = dp.id
-    WHERE s.ship_code = ?
+    WHERE s.ship_code = ? OR REPLACE(s.ship_code, '-', '') = ?
     LIMIT 1
-  `, [shipCode]);
+  `, [shipCode, cleanCode]);
   return rows[0] || null;
 }
 

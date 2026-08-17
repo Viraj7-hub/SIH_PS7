@@ -1,0 +1,7 @@
+{
+  "ignore": [
+    "services/land_edges_cache_v2.json",
+    "*.json"
+  ],
+  "ext": "js,mjs,cjs"
+}

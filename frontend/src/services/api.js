@@ -54,7 +54,12 @@ export const optimizeNautilusRoute = async (payload) =>
  * Retrieve a previously saved Nautilus route result by ID.
  * @param {number} id
  */
-export const getNautilusRoute = async (id) => api.get(`/routes/${id}`);
+export const getActiveCyclones  = async () => api.get('/cyclones');
+export const getCyclonesNearRoute = async (waypoints) => api.get('/cyclones/near-route', { params: { waypoints: JSON.stringify(waypoints) } });
+export const getMarineWeatherGrid = async (bbox, step) => api.get('/marine-weather', { params: { bbox, step } });
+export const getTides          = async (shipId) => api.get('/tides', { params: { shipId } });
+export const getOceanCurrents   = async (shipId) => api.get('/ocean-currents', { params: { shipId } });
 
 export default api;
+
 

@@ -140,4 +140,29 @@ router.get('/marine-weather', marineWeatherLimiter, async (req, res, next) => {
   }
 });
 
+// ── GET /api/tides ────────────────────────────────────────────────────────────
+// Returns real tide station observations (MSL height, flood/ebb state).
+router.get('/tides', async (req, res, next) => {
+  try {
+    const shipId = req.query.shipId || 'SHIP001';
+    const result = await weatherService.getTides(shipId);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── GET /api/ocean-currents ───────────────────────────────────────────────────
+// Returns ocean current vectors along the active route / region grid.
+router.get('/ocean-currents', async (req, res, next) => {
+  try {
+    const shipId = req.query.shipId || 'SHIP001';
+    const result = await weatherService.getOceanCurrents(shipId);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;
+

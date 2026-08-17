@@ -5,6 +5,7 @@ import Sidebar         from '../components/nautilus/Sidebar';
 import MapCanvas       from '../components/nautilus/MapCanvas';
 import MetricsDashboard from '../components/nautilus/MetricsDashboard';
 import { getPorts, optimizeNautilusRoute } from '../services/api';
+import { sanitizeStoredRoute } from '../utils/coordinateUtils';
 
 /**
  * pages/NautilusRouter.jsx
@@ -50,6 +51,24 @@ export default function NautilusRouter() {
     return () => { cancelled = true; };
   }, []);
 
+  // Restore last calculated route from localStorage on mount if available
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('oceanroute_active_route');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const sanitized = sanitizeStoredRoute(parsed);
+        if (sanitized) {
+          setRouteData(sanitized);
+        } else {
+          localStorage.removeItem('oceanroute_active_route');
+        }
+      }
+    } catch {
+      localStorage.removeItem('oceanroute_active_route');
+    }
+  }, []);
+
   // Calculate route
   const handleCalculate = useCallback(async (params) => {
     setCalculating(true);
@@ -58,7 +77,14 @@ export default function NautilusRouter() {
     try {
       const res = await optimizeNautilusRoute(params);
       if (res.data?.success) {
-        setRouteData(res.data.data);
+        const data = res.data.data;
+        const sanitized = sanitizeStoredRoute(data);
+        if (sanitized) {
+          setRouteData(sanitized);
+          localStorage.setItem('oceanroute_active_route', JSON.stringify(sanitized));
+        } else {
+          setError('Calculated route contained invalid coordinate data.');
+        }
       } else {
         setError(res.data?.message || 'Route optimization failed.');
       }

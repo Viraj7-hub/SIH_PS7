@@ -8,6 +8,16 @@ const initialState = {
   password: 'demo123',
 };
 
+const DEFAULT_SHIP = {
+  shipId: 'SHIP001',
+  shipName: 'Ocean Star',
+  source: 'Mumbai Port',
+  destination: 'Port of Colombo',
+  currentPosition: { lat: 18.9388, lon: 72.8354 },
+  destinationPosition: { lat: 6.9271, lon: 79.8612 },
+  speed: 18.2,
+};
+
 export default function Login() {
   const navigate = useNavigate();
   const [form, setForm] = useState(initialState);
@@ -18,12 +28,26 @@ export default function Login() {
   /**
    * Extract token + role from both API response shapes:
    *   New:    { success: true, token, user: { role } }
-   *   Legacy: { token, user: { email, name } }
+   *   Legacy: { token, user: { email, name, role } }
    */
   const extractAuth = (payload) => {
     const token    = payload?.token || payload?.data?.token;
     const userRole = payload?.user?.role || payload?.data?.user?.role || 'crew';
     return { token, userRole };
+  };
+
+  const handleLoginSuccess = (token, userRole) => {
+    localStorage.setItem('oceanroute_token', token);
+    localStorage.setItem('oceanroute_role', userRole);
+
+    if (userRole === 'captain') {
+      navigate('/ship-select');
+    } else {
+      if (!localStorage.getItem('oceanroute_ship')) {
+        localStorage.setItem('oceanroute_ship', JSON.stringify(DEFAULT_SHIP));
+      }
+      navigate('/dashboard');
+    }
   };
 
   const handleSubmit = async (event) => {
@@ -41,13 +65,7 @@ export default function Login() {
       const response = await login({ email: form.email, password: form.password });
       const { token, userRole } = extractAuth(response.data);
       if (!token) throw new Error('No token received');
-      localStorage.setItem('oceanroute_token', token);
-      localStorage.setItem('oceanroute_role', userRole);
-      if (userRole === 'captain') {
-        navigate('/nautilus');
-      } else {
-        navigate('/ship-select');
-      }
+      handleLoginSuccess(token, userRole);
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid email or password.');
     } finally {
@@ -62,9 +80,7 @@ export default function Login() {
       const response = await login({ email: 'crew@oceanroute.com', password: 'demo123' });
       const { token, userRole } = extractAuth(response.data);
       if (!token) throw new Error('No token received');
-      localStorage.setItem('oceanroute_token', token);
-      localStorage.setItem('oceanroute_role', userRole);
-      navigate('/ship-select');
+      handleLoginSuccess(token, userRole);
     } catch (err) {
       setError(err.response?.data?.message || 'Demo login failed. Please try again.');
     } finally {
@@ -139,7 +155,7 @@ export default function Login() {
         </form>
 
         <div className="mt-6 border-t border-slate-800/80 pt-4 text-center text-xs text-slate-400 space-y-1">
-          <div><span className="font-semibold text-cyan-400">Captain Logins:</span> demo@oceanroute.com</div>
+          <div><span className="font-semibold text-cyan-400">Captain Login:</span> demo@oceanroute.com</div>
           <div><span className="font-semibold text-slate-300">Crew/Passenger:</span> crew@oceanroute.com</div>
           <div>Password: <span className="font-medium text-slate-200">demo123</span></div>
         </div>

@@ -1,9 +1,11 @@
 import { Polyline } from 'react-leaflet';
+import { normalizeRouteWaypoints } from '../utils/coordinateUtils';
 
 export default function RouteLayer({ route, visible }) {
-  if (!visible || !Array.isArray(route) || route.length < 2) return null;
+  if (!visible || !Array.isArray(route)) return null;
 
-  const positions = route.map((point) => [point.lat, point.lon]);
+  const positions = normalizeRouteWaypoints(route);
+  if (positions.length < 2) return null;
 
   return (
     <Polyline

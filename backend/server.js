@@ -40,9 +40,11 @@ const legacyRoutes  = require('./routes/legacy.routes');  // legacy compat — l
 const { healthCheck } = require('./controllers/health.controller');
 
 // ── Startup housekeeping ──────────────────────────────────────────────────────
-// Purge old weather cache on startup (non-blocking)
+// Purge old weather cache and sync live GDACS cyclones on startup (non-blocking)
 const cacheService = require('./services/cache.service');
-cacheService.purgeExpiredCache().catch(() => {}); // never crash startup
+const cycloneService = require('./services/cyclone.service');
+cacheService.purgeExpiredCache().catch(() => {});
+cycloneService.syncFromLiveSource().catch(() => {}); // never crash startup
 
 // ─────────────────────────────────────────────────────────────────────────────
 const app = express();

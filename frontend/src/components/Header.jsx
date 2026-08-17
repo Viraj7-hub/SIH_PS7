@@ -22,19 +22,17 @@ export default function Header({ shipName, shipId, onLogout }) {
 
       <div className="flex items-center gap-3">
         {/* Nautilus Router shortcut */}
-        {localStorage.getItem('oceanroute_role') === 'captain' && (
-          <button
-            type="button"
-            onClick={() => navigate('/nautilus')}
-            title="Open Nautilus Route Optimizer"
-            className="hidden sm:inline-flex items-center gap-1.5 rounded-2xl border border-cyan-500/40
-                       bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-300
-                       transition hover:bg-cyan-500/20 hover:border-cyan-400"
-          >
-            <Compass className="h-3.5 w-3.5" />
-            Nautilus
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => navigate('/nautilus')}
+          title="Open Nautilus Route Optimizer"
+          className="inline-flex items-center gap-1.5 rounded-2xl border border-cyan-500/40
+                     bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-300
+                     transition hover:bg-cyan-500/20 hover:border-cyan-400"
+        >
+          <Compass className="h-3.5 w-3.5" />
+          Nautilus Router
+        </button>
 
         <div className="hidden rounded-2xl border border-slate-700/80 bg-slate-900/80 px-3 py-2 text-right shadow-sm sm:block">
           <div className="text-[0.62rem] uppercase tracking-[0.22em] text-slate-400">Ship</div>

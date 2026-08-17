@@ -24,8 +24,9 @@ const { pool }    = require('../config/db');
 const portModel   = require('../models/port.model');
 const shipModel   = require('../models/ship.model');
 const { AppError } = require('../middleware/error.middleware');
+const { validateRouteWaypoints } = require('./land.validator');
 
-const { buildGraph, nodeDistance }      = require('./graph.builder');
+const { buildGraph, nodeDistance, invalidateGraphCache } = require('./graph.builder');
 const { dijkstra, aStar, makeHeuristic } = require('./pathfinder');
 const {
   computeWeights,
@@ -34,6 +35,8 @@ const {
   makeMultiObjectiveCostFn,
   generateExplanation,
 } = require('./cost.normalizer');
+
+// Graph cache is built once and maintained in memory
 
 // ─── Weather Interface ────────────────────────────────────────────────────────
 
@@ -49,7 +52,6 @@ async function fetchWeatherConditions(nodeIds, nodes) {
   try {
     const weatherService = require('./weather.service');
     if (typeof weatherService.getConditionsAlongRoute !== 'function') {
-      // Member 3 hasn't implemented this yet — use existing stub data
       return [];
     }
     const waypoints = nodeIds.map((id) => {
@@ -57,9 +59,9 @@ async function fetchWeatherConditions(nodeIds, nodes) {
       return n ? { lat: n.lat, lng: n.lng } : null;
     }).filter(Boolean);
 
-    return await weatherService.getConditionsAlongRoute(waypoints);
+    const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve([]), 2500));
+    return await Promise.race([weatherService.getConditionsAlongRoute(waypoints), timeoutPromise]);
   } catch {
-    // Weather service unavailable — degrade gracefully
     return [];
   }
 }
@@ -268,12 +270,18 @@ async function runOptimization({ sourcePortId, destinationPortId, vessel, priori
     multiCostWithNodes, heuristic
   );
 
-  // Fall back to Dijkstra result if A* fails (should not happen with connected graph)
+  // Fall back to Dijkstra result if A* fails
   const finalOptimized = optimizedResult || standardResult;
 
   // 7. Build waypoint arrays
   const stdWaypoints = pathToWaypoints(standardResult.path, nodes);
   const optWaypoints = pathToWaypoints(finalOptimized.path, nodes);
+
+  // Programmatic verification: Every route segment MUST remain 100% in navigable ocean water
+  const validation = validateRouteWaypoints(optWaypoints);
+  if (!validation.valid) {
+    throw new AppError('Unable to generate a valid ocean-only route. Route candidate intersected land.', 'ROUTING_ERROR');
+  }
 
   // 8. Compute metrics
   const stdEdges  = standardResult.path.length - 1  || 1;
